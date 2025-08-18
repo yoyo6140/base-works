@@ -1,1 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>衣服工廠訂購表單</title>
+    <style>
+        body {
+            text-align: center;
+        }   
+        
+        #name,#ordernumber {
+            width: 300px;
+            border: 0;
+            border-radius: 3px;
+            letter-spacing: 1px;
+            color: #595959;
+            background-color: #eee;
+            padding: 8px;
+            margin-bottom: 5px;
+            outline: 0;
+            
+        }
 
+        button {
+            width: 100px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            margin: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            }
+
+        input {
+             width: 300px;
+            height: 30px;
+            font-size: 30px;
+        }
+
+        #mycloth,#gender {
+            width: 312px;
+            font-size: 30px;
+            margin-bottom: 10px;
+            border: 1px solid;
+            border-radius: 3px;
+            letter-spacing: 1px;
+            color: #595959;
+            padding: 8px;
+        }
+
+        .list {
+            width: 310px; 
+            font-size: 30px;
+            background-color: antiquewhite; 
+            height: auto; 
+            font-size: 20px;
+            margin: auto;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="name" placeholder="請輸入名字">
+    <br>
+    <select id="gender">
+        <option value="none" selected disabled hidden >請選擇服裝分類</option>
+        <option value="man">男裝</option>
+        <option value="woman">女裝</option>
+    </select>
+    <br>
+    <select id="mycloth">
+        <option value="none" selected disabled hidden >請選擇服裝類型</option>
+        <option value="coat">外套</option>
+        <option value="colth">上衣</option>
+        <option value="pants">褲子</option>
+    </select>
+    <br>
+    <input type="text" id="ordernumber" placeholder="請輸入訂購數量">
+    <br>
+    <div class="list">
+        <div>您的訂單</div>
+        <hr>
+        <div>您的名字：<span id="changname"></span></div>
+        <br>
+        <div>服裝分類：<span id="cloth1"></span></div>
+        <br>
+        <div>服裝類型：<span id="cloth2"></span></div>
+        <br>
+        <div>訂購數量：<span id="orders"></span><span>件</span></div>
+        <br>
+        <div>初步估價：新台幣<span id="price"></span><span>元</span></div>
+        <br>
+    </div>
+
+    <br>
+    <button class="order" onclick="myorder()">我要訂購</button>
+    <button class="rez" onclick="myrez()">認識工廠</button>
+
+    <script>
+        const howUse = '此作品透過使用基礎HTML、CSS、JS實現條件篩選、訂購與提示'
+        alert(howUse)
+        //訂購按鈕
+        function myorder() {
+            const name = document.getElementById('name').value.trim(); //去掉前後空格
+            if (name === '') {
+                alert('請輸入姓名');
+                return;
+            }
+
+            //取得選擇類型的值 設立條件
+            const gender = document.getElementById('gender');
+            const clothType = document.getElementById('mycloth');
+
+            if (gender.value === 'none') {
+                alert('請選擇服裝分類');
+                return;
+            }
+            if (clothType.value === 'none') {
+                alert('請選擇服裝類型');
+                return;
+            }
+
+            //取得訂購數量的值 設立條件
+            let orderNumber = Number(document.getElementById('ordernumber').value);
+
+            if (
+                isNaN(orderNumber) ||        // 非數字
+                orderNumber <= 0 ||          // 小於等於 0
+                !Number.isInteger(orderNumber) || // 非整數
+                orderNumber < 100 ||         // 小於最低出貨量
+                orderNumber > 5000           // 大於最高出貨量
+            ) {
+                alert('請輸入正確的訂購數量 (100~5000 正整數)');
+                return;
+            }
+
+              //訂購數量輸入正確才會繼續往下
+            alert(name + ' 您好! 謝謝您對我們的衣服有興趣！請致電 0987-654-321，會有專人提供您報價！');
+
+            document.getElementById('changname').textContent = name;
+
+            let genderrr = document.getElementById('gender');
+            let choose = genderrr.selectedIndex; //使用者目前選中的選項的索引值
+            let chooose = genderrr.options[choose].text;
+            document.getElementById('cloth1').textContent = chooose;
+
+            let menu = document.getElementById('mycloth');
+            let index = menu.selectedIndex;  
+            let texttt = menu.options[index].text;
+            document.getElementById('cloth2').textContent = texttt;
+
+            
+            let priceAll = 0;
+
+            if (genderrr.value === 'man') {
+                alert('最近剛好是工廠週年慶，只要您今天來電下單，我們將贈送您帥氣領帶！');
+            } else {
+                alert('最近剛好是工廠週年慶，只要您今天來電下單，我們將贈送您美麗圍巾！');
+            }
+
+            alert('您訂購的種類:' + texttt + '; 您訂購的類型:' + chooose);
+
+            if (genderrr.value === 'man') {
+                priceAll = orderNumber * 600;
+            } else {
+                priceAll = orderNumber * 500;
+            }
+            alert(`價格是 ${priceAll}`);
+
+            document.getElementById('orders').textContent = orderNumber;
+            document.getElementById('price').textContent = priceAll;
+        }
+
+        function myrez() {
+            const name = document.getElementById('name').value;
+            alert(name + ' 您好! 我們工廠位於新北市，通過國際 ISO9001 認證，品質讓您放心！');
+        }
+    </script>
+</body>
+</html>
