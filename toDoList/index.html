@@ -1,1 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>備忘錄</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        background-color: #FFF0DF;
+        font-family: sans-serif;
+        font-size: 16px;
+        color: #606060;
+    }
+    #test {
+        border: 5px solid #4CAF50;
+        border-radius: 12px;
+        padding: 20px;
+        width: 400px;
+        margin: 0 auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    #add {
+        margin-bottom: 5px;
+        padding: 5px 10px;
+        font-size: 16px;
+    }
+    button {
+        padding: 5px 10px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    #selectLevel {
+        font-size: large;
+    }
+    #app {
+        margin: 20px auto;
+        width: 800px;
+        padding: 20px;
+    }
+    li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+    .deleButton { font-size: 16px; }
 
+    /* 列表項目顏色 */
+    li[data-level="normal"] { background-color: white; color: #606060; }
+    li[data-level="important"] { background-color: orange; color: white; }
+    li[data-level="urgent"] { background-color: rgb(216, 74, 74); color: white; }
+
+    /* 已完成的項目顏色淡一點 */
+    .done { opacity: 0.6; }
+</style>
+</head>
+<body>
+    <div id="test">
+        <input type="text" id="add" placeholder="請輸入你要新增的事項">
+        <br><br>
+        <button onclick="add()">新增</button>
+        <button onclick="exportText()">匯出純文字</button>
+        <button onclick="clearStorage()">清除所有資料</button>
+        <select id="selectLevel">
+            <option value="none" selected disabled hidden>請選擇類型</option>
+            <option value="normal">一般</option>
+            <option value="important">重要</option>
+            <option value="urgent">緊急</option>
+        </select>
+    </div>
+
+    <div id="app"></div>
+
+    <script>
+        // 初始化
+        window.onload = () => {
+            loadFromStorage();
+        };
+
+        function add(value, level, done=false) {
+            const input = document.querySelector('#add');
+            const select = document.querySelector('#selectLevel');
+
+            // 如果是手動新增才讀取 input
+            if (!value) value = input.value.trim();
+            if (!level) level = select.value;
+
+            if (!value) { alert('請輸入項目'); return; }
+            if (level === 'none') { alert('請選擇類型'); return; }
+
+            // 建立 li 並設定 data-level
+            const li = document.createElement('li');
+            li.dataset.level = level;
+
+            // 文字 span
+            const span = document.createElement('span');
+            span.textContent = done ? '[已完成] ' + value : value;
+            li.appendChild(span);
+
+            // 完成按鈕
+            const finishBtn = document.createElement('button');
+            finishBtn.textContent = done ? '[取消完成]' : '[完成]';
+            finishBtn.onclick = () => toggleDone(li, span, finishBtn, value, level);
+            li.appendChild(finishBtn);
+
+            // 刪除按鈕
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '刪除';
+            delBtn.className = 'deleButton';
+            delBtn.onclick = () => {
+                li.remove();
+                saveToStorage();
+            };
+            li.appendChild(delBtn);
+
+            // 已完成加樣式 & 移到底部
+            if (done) {
+                li.classList.add('done');
+                document.querySelector('#app').appendChild(li);
+            } else {
+                document.querySelector('#app').insertBefore(li, document.querySelector('#app').firstChild);
+            }
+
+            // 清空 input 與重置 select (手動新增才清空)
+            if (!arguments[0]) {
+                input.value = '';
+                select.value = 'none';
+            }
+
+            saveToStorage();
+        }
+
+        // 切換完成狀態
+        function toggleDone(li, span, btn, value, level) {
+            if (li.classList.contains('done')) {
+                // 取消完成
+                li.classList.remove('done');
+                span.textContent = value;
+                btn.textContent = '[完成]';
+                document.querySelector('#app').insertBefore(li, document.querySelector('#app').firstChild);
+            } else {
+                // 標記完成
+                li.classList.add('done');
+                span.textContent = '[已完成] ' + value;
+                btn.textContent = '[取消完成]';
+                document.querySelector('#app').appendChild(li);
+            }
+            saveToStorage();
+        }
+
+        // 匯出純文字
+        function exportText() {
+            const items = document.querySelectorAll('#app li span:first-child');
+            let text = '待辦事項清單：\n';
+            items.forEach((span, idx) => {
+                text += `${idx+1}. ${span.textContent}\n`;
+            });
+            alert(text);
+        }
+
+        // 存到 localStorage
+        function saveToStorage() {
+            const data = [];
+            document.querySelectorAll('#app li').forEach(li => {
+                const span = li.querySelector('span');
+                const value = span.textContent.replace('[已完成] ', '');
+                const level = li.dataset.level;
+                const done = li.classList.contains('done');
+                data.push({ value, level, done });
+            });
+            localStorage.setItem('todoList', JSON.stringify(data));
+        }
+
+        // 從 localStorage 載入
+        function loadFromStorage() {
+            const data = JSON.parse(localStorage.getItem('todoList') || '[]');
+            data.forEach(item => add(item.value, item.level, item.done));
+        }
+
+        // 清除 localStorage
+        function clearStorage() {
+            if (confirm('確定要清除所有資料嗎？')) {
+                localStorage.removeItem('todoList');
+                document.querySelector('#app').innerHTML = '';
+            }
+        }
+    </script>
+</body>
+</html>
