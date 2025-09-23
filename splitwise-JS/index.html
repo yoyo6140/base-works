@@ -1,1 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Splitwise 分帳小幫手</title>
+<link rel="icon" href="image/splitwist.png" type="image/x-icon">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+* { box-sizing: border-box; }
+body {
+  font-family: 'Roboto', sans-serif;
+  max-width: 700px;
+  margin: 20px auto;
+  background: #f5f5f5;
+  color: #333;
+}
+h1 { text-align: center; margin-bottom: 30px; color: #4c4c4c; }
+section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+h2 {
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  color: #555;
+}
+.flex-row { display: flex; gap: 10px; flex-wrap: wrap; }
+input, select {
+  padding: 8px 10px;
+  margin: 5px 0;
+  flex: 1;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+  transition: 0.2s;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: #4c9aff;
+  box-shadow: 0 0 5px rgba(76,154,255,0.3);
+}
+button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.95rem;
+  transition: 0.2s;
+  background: #4c9aff;
+  color: white;
+}
+button:hover { background: #357ae8; }
+#clear-btn { background: #f44336; margin-top: 10px; }
+#clear-btn:hover { background: #d32f2f; }
+.list-header, .member, .expense-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.95rem;
+}
+.list-header span { font-weight: bold; }
+.member span:last-child, .expense-item span:last-child { text-align: right; min-width: 100px; display: inline-block; }
+.expense-item button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-left: 10px;
+}
+.expense-item button:hover { background: #d32f2f; }
+.positive { color: green; font-weight: bold; }
+.negative { color: red; font-weight: bold; }
+@media (max-width: 480px) { .flex-row { flex-direction: column; } }
+</style>
+</head>
+<body>
 
+<h1>Splitwise 分帳小幫手</h1>
+
+<section>
+  <h2>分帳成員</h2>
+  <div id="member-list">尚無成員</div>
+  <div class="flex-row">
+    <input type="text" id="new-member-name" placeholder="輸入成員姓名" />
+    <button id="add-member-btn">新增成員</button>
+  </div>
+</section>
+
+<section>
+  <h2>新增支出款項</h2>
+  <div>
+    <label for="expense-name">款項名稱</label>
+    <input type="text" id="expense-name" placeholder="輸入款項名稱" />
+  </div>
+  <div>
+    <label for="expense-amount">款項金額</label>
+    <input type="number" id="expense-amount" placeholder="輸入金額" min="0" />
+  </div>
+  <div>
+    <label for="expense-payer">由誰付款</label>
+    <select id="expense-payer"></select>
+  </div>
+  <button id="add-expense-btn">新增支出</button>
+</section>
+
+<section>
+  <h2>帳款清單</h2>
+  <div id="expense-list">尚無支出記錄</div>
+</section>
+
+<section>
+  <h2>成員應付/應收</h2>
+  <div id="balance-list"></div>
+</section>
+
+<button id="clear-btn">旅程結束（清除所有資料）</button>
+
+<script>
+    //自動讀取在localStorage
+let members = JSON.parse(localStorage.getItem('splitwise_members')) || [];
+let expenses = JSON.parse(localStorage.getItem('splitwise_expenses')) || [];
+
+const memberListDiv = document.getElementById('member-list');
+const expenseListDiv = document.getElementById('expense-list');
+const balanceListDiv = document.getElementById('balance-list');
+const expensePayerSelect = document.getElementById('expense-payer');
+
+
+//產生id
+function generateId() {
+  return  Date.now().toString()
+}
+
+//每次新增時 呼叫 把資料存入
+function saveData() {
+  localStorage.setItem('splitwise_members', JSON.stringify(members));
+  localStorage.setItem('splitwise_expenses', JSON.stringify(expenses));
+}
+
+// 渲染成員
+function renderMembers() {
+  memberListDiv.innerHTML = '';
+  expensePayerSelect.innerHTML = '';
+
+  if (members.length === 0) {
+    memberListDiv.textContent = '尚無成員';
+    return;
+  }
+
+  members.forEach(m => {
+    const div = document.createElement('div');
+    div.classList.add('member');
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = m.name;
+    div.appendChild(nameSpan);
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '刪除';
+    delBtn.addEventListener('click', () => {
+        members = members.filter(mem => mem.id !== m.id);
+        expenses = expenses.filter(exp => exp.paidBy !== m.id);
+        saveData();
+        renderMembers();
+        renderExpenses();
+    });
+    div.appendChild(delBtn);
+
+    memberListDiv.appendChild(div);
+
+    const option = document.createElement('option');
+    option.value = m.id;
+    option.textContent = m.name;
+    expensePayerSelect.appendChild(option);
+  });
+
+  renderBalances();
+}
+
+// 新增成員-加上點擊事件
+document.getElementById('add-member-btn').addEventListener('click', () => {
+  const name = document.getElementById('new-member-name').value.trim();
+  if (!name) return alert('請輸入成員姓名');
+  members.push({ id: generateId(), name });
+  document.getElementById('new-member-name').value = '';
+  saveData();
+  renderMembers();
+  renderExpenses();
+});
+
+// 新增支出-加上點擊事件
+document.getElementById('add-expense-btn').addEventListener('click', () => {
+  const name = document.getElementById('expense-name').value.trim();
+  const amount = parseFloat(document.getElementById('expense-amount').value);
+  const paidBy = document.getElementById('expense-payer').value;
+  if (!name) return alert('請輸入款項名稱');
+  if (isNaN(amount) || amount <= 0) return alert('請輸入正確金額');
+  if (!paidBy) return alert('請選擇付款人');
+  expenses.push({ id: generateId(), name, amount, paidBy });
+  document.getElementById('expense-name').value = '';
+  document.getElementById('expense-amount').value = '';
+  saveData();
+  renderExpenses();
+  renderBalances();
+});
+
+// 渲染支出清單
+function renderExpenses() {
+  expenseListDiv.innerHTML = '';
+  if (expenses.length === 0) {
+    expenseListDiv.textContent = '尚無支出記錄';
+    return;
+  }
+
+  expenses.forEach(exp => {
+    const div = document.createElement('div');
+    div.classList.add('expense-item');
+
+    const payer = members.find(m => m.id === exp.paidBy);
+    div.innerHTML = `<span>${exp.name} - ${exp.amount.toFixed(2)} 元 - 付款人：${payer ? payer.name : '未知'}</span>`;
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '刪除';
+    delBtn.addEventListener('click', () => {
+      expenses = expenses.filter(e => e.id !== exp.id);
+      saveData();
+      renderExpenses();
+      renderBalances();
+    });
+
+    div.appendChild(delBtn);
+    expenseListDiv.appendChild(div);
+  });
+}
+
+// 渲染應付/應收
+function renderBalances() {
+  balanceListDiv.innerHTML = '<div class="list-header"><span>成員姓名</span><span>應付/應收</span></div>';
+  if (members.length === 0) return;
+
+  const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const perPerson = members.length ? totalAmount / members.length : 0;
+  const paidMap = {};
+  members.forEach(m => paidMap[m.id] = 0);
+  expenses.forEach(e => { if (paidMap[e.paidBy] !== undefined) paidMap[e.paidBy] += e.amount; });
+
+  members.forEach(m => {
+    const div = document.createElement('div');
+    div.classList.add('member');
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = m.name;
+    div.appendChild(nameSpan);
+
+    const balance = paidMap[m.id] - perPerson;
+    const balSpan = document.createElement('span');
+    if (balance > 0) {
+      balSpan.classList.add('positive');
+      balSpan.textContent = `應收 ${balance.toFixed(2)} 元`;
+    } else if (balance < 0) {
+      balSpan.classList.add('negative');
+      balSpan.textContent = `應付 ${Math.abs(balance).toFixed(2)} 元`;
+    } else {
+      balSpan.textContent = '已結清';
+    }
+    div.appendChild(balSpan);
+    balanceListDiv.appendChild(div);
+  });
+}
+
+// 清除所有資料
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (confirm('確定要清除所有資料嗎？此動作無法復原。')) {
+    members = [];
+    expenses = [];
+    saveData();
+    renderMembers();
+    renderExpenses();
+    renderBalances()
+  }
+});
+
+// 初始化
+renderMembers();
+renderExpenses();
+</script>
+
+</body>
+</html>
