@@ -1,22 +1,85 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>會員註冊</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+
+    <style>
+
+        body { 
+            font-family: sans-serif; 
+            text-align: center;
+            font-family: sans-serif;
+            padding: 40px;padding: 20px; 
+
+        }
+        select { 
+            padding: 5px; 
+            width: 400px;
+            height: 100px;
+            font-size: 40px;
+        }
+        #weather { 
+            margin-top: 20px; 
+            
+        }
+
+         #WeatherInfo {
+            font-size: 40px;
+        }
+  </style>
 </head>
 <body>
-    <h1>填寫表單</h1>
-    <form action="/002_表單處理.php" method="post">
-        <label>
-            <input type="text" name="name">
-        </label><br>
-        <label>
-            <input type="text" name="email">
-        </label><br>
-        <button type="submit">送出</button>
-    </form>
+    <select  id="citySelect">
+        <option value="">請選擇縣市</option>
+        <option value="臺北市">台北市</option>
+        <option value="新北市">新北市</option>
+        <option value="桃園市">桃園市</option>
+        <option value="高雄市">高雄市</option>
+        <option value="臺中市">臺中市</option>
+    </select>
 
-    <a href="./001_函式的概念.php">練習</a>
-    <a href="./04_全域與區域.php">練習04</a>
+    <div id="WeatherInfo" style="display: none;">
+        <p><strong>天氣現象:</strong><span id="description"></span></p>
+        <p><strong>最高溫度:</strong><span id="maxTemp"></span></p>
+        <p><strong>最低溫度:</strong><span id="minTemp"></span></p>
+        <p><strong>降雨機率:</strong><span id="rainProb"></span></p>
+    </div>
+
+    <script>
+        const apiKey = 'CWA-F0FC0B6A-20CF-4F38-8CD9-C6B8F1BEDB90';
+        const apiUrl = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWA-F0FC0B6A-20CF-4F38-8CD9-C6B8F1BEDB90&format=JSON`;
+
+        document.getElementById('citySelect').addEventListener('change', async function () {
+            const city = this.value;
+            if (!city) return;
+
+            const res = await fetch(apiUrl);
+            const data = await res.json();
+            const locations = data.records.location;
+
+            const cityData = locations.find(loc => loc.locationName === city);
+
+            if (!cityData) {
+                alert('找不到該縣市的資料');
+                return
+            }
+            
+            const wx = cityData.weatherElement.find(el => el.elementName === 'Wx').time[0].parameter.parameterName;
+            const minT = cityData.weatherElement.find(el => el.elementName === 'MinT').time[0].parameter.parameterName;
+            const maxT = cityData.weatherElement.find(el => el.elementName === 'MaxT').time[0].parameter.parameterName;
+            const pop = cityData.weatherElement.find(el => el.elementName === 'PoP').time[0].parameter.parameterName;
+
+            document.getElementById('description').textContent = wx;
+            document.getElementById('maxTemp').textContent = maxT;
+            document.getElementById('minTemp').textContent = minT;
+            document.getElementById('rainProb').textContent = pop;
+            document.getElementById('WeatherInfo').style.display = 'block';
+        })
+
+    </script>
+
+    
 </body>
 </html>
