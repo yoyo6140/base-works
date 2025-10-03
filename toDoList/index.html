@@ -175,6 +175,8 @@
 
         // 從 localStorage 載入
         function loadFromStorage() {
+            const app = document.querySelector('#app');
+            app.innerHTML = ""; // 先清空，避免重複疊加
             const data = JSON.parse(localStorage.getItem('todoList') || '[]');
             data.forEach(item => add(item.value, item.level, item.done));
         }
@@ -189,3 +191,4 @@
     </script>
 </body>
 </html>
+
